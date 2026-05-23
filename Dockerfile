@@ -1,5 +1,6 @@
 FROM php:8.3-cli
-# Install system dependencies
+
+# Install system dependencies (lebih efisien)
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -9,10 +10,11 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libpq-dev \
     zip \
-    unzip
-
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    unzip \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip pdo_pgsql
@@ -20,29 +22,23 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip pdo_pgsql
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install Node.js
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs
-
 # Set working directory
 WORKDIR /var/www
 
-# Copy existing application directory
+# Copy files
 COPY . /var/www
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Install dependencies (tanpa dev, lebih cepat)
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Build frontend assets
-RUN npm install && npm run build
+# Build frontend
+RUN npm ci && npm run build
 
-# Generate application key if not exists
-RUN php artisan key:generate --force || true
+# Optimize Laravel
+RUN php artisan optimize:clear
 
 # Expose port
 EXPOSE 8000
 
-# Start Laravel server
+# Start server
 CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
-
-
