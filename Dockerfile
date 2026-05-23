@@ -1,6 +1,6 @@
 FROM php:8.3-cli
 
-# Install system dependencies (lebih efisien)
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -28,14 +28,11 @@ WORKDIR /var/www
 # Copy files
 COPY . /var/www
 
-# Install dependencies (tanpa dev, lebih cepat)
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Build frontend
 RUN npm ci && npm run build
-
-# Optimize Laravel
-RUN php artisan optimize:clear
 
 # Expose port
 EXPOSE 8000
