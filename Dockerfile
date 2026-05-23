@@ -1,6 +1,6 @@
 FROM php:8.3-cli
 
-# Install system dependencies
+# Install dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -22,24 +22,23 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip pdo_pgsql
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /var/www
 
-# Copy files
 COPY . /var/www
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Build frontend
-RUN npm ci && npm run build
+# Build npm
+RUN npm ci --loglevel=error && npm run build --if-present
 
-# Expose port
-EXPOSE 8000
-
-# Fix permissions
+# Fix permissions (PENTING!)
 RUN chmod -R 775 storage bootstrap/cache && \
     chown -R www-data:www-data storage bootstrap/cache
-    
-# Start server
+
+# Create .env file dengan variables dari Render
+RUN touch .env
+
+EXPOSE 8000
+
 CMD exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
