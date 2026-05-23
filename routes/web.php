@@ -23,6 +23,11 @@ use App\Http\Controllers\Kurir\DashboardController;
 // ============================================================================
 // 🚪 GUEST ROUTES (Belum Login)
 // ============================================================================
+
+Route::get('/health', function () {
+    return response('OK', 200)->header('Content-Type', 'text/plain');
+});
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.post');
