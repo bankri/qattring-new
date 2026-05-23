@@ -24,9 +24,10 @@ use App\Http\Controllers\Kurir\DashboardController;
 // 🚪 GUEST ROUTES (Belum Login)
 // ============================================================================
 
+// Health check route - HARUS PALING ATAS
 Route::get('/health', function () {
-    return response('OK', 200)->header('Content-Type', 'text/plain');
-});
+    return 'OK';
+})->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
