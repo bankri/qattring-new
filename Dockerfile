@@ -1,6 +1,6 @@
 FROM php:8.3-cli
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -24,21 +24,35 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
+# Copy application files
 COPY . /var/www
 
-# Install dependencies
+# Copy .env.example to .env if .env doesn't exist
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
+
+# Install composer dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Build npm
+# Build frontend assets
 RUN npm ci --loglevel=error && npm run build --if-present
 
-# Fix permissions (PENTING!)
-RUN chmod -R 775 storage bootstrap/cache && \
+# Generate APP_KEY if empty
+RUN if [ -z "$(grep -E '^APP_KEY=.+' .env | cut -d= -f2)" ]; then \
+        php artisan key:generate --force; \
+    fi
+
+# Create storage directories and set permissions
+RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache && \
+    chmod -R 777 storage bootstrap/cache && \
     chown -R www-data:www-data storage bootstrap/cache
 
-# Create .env file dengan variables dari Render
-RUN touch .env
+# Clear and cache Laravel configs (safe with || true)
+RUN php artisan config:clear || true
+RUN php artisan cache:clear || true
+RUN php artisan view:clear || true
+RUN php artisan route:clear || true
 
 EXPOSE 8000
 
+# Start Laravel server
 CMD exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
