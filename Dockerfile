@@ -37,5 +37,9 @@ RUN npm ci && npm run build
 # Expose port
 EXPOSE 8000
 
+# Fix permissions
+RUN chmod -R 775 storage bootstrap/cache && \
+    chown -R www-data:www-data storage bootstrap/cache
+    
 # Start server
 CMD exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}
